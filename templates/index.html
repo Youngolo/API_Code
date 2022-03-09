@@ -1,0 +1,242 @@
+<html>
+ <head>
+  <meta charset="UTF-8" />
+  <title>验证码识别</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <style>
+.button {
+	display: inline-block;
+	padding: 5px 32px;
+	font-size: 16px;
+	cursor: pointer;
+	text-align: center;
+	text-decoration: none;
+	outline: none;
+	color: #fff;
+	background-color: #4CAF50;
+	border: none;
+	border-radius: 15px;
+}
+/*手机*/
+@media screen and (max-width:600px){
+    .is {
+        width: 100%;
+    }
+}
+/*平板*/
+@media screen and (min-width:600px) and (max-width:960px){
+    .is {
+        width: 80%;
+        margin-left: 10%;
+    }
+}
+/*PC*/
+@media screen and (min-width:960px){
+    .is {
+        width: 50%;
+        margin-left: 25%;
+    }
+}
+.background { display: block; width: 100%; height: 100%; opacity: 0.4; filter: alpha(opacity=40);
+            background-color: #696969; position: absolute; top: 0; left: 0; z-index: 2000; }
+.progressBar { border: solid 2px #86A5AD; background: white url(https://young.my-youth.cn/ai-code/progressBar_m.gif)
+            no-repeat 10px 10px; } .progressBar { display: block; height: 28px; position:
+            fixed; top: 50%; left: 50%; margin-left: -74px; margin-top: -14px; padding:
+            10px 10px 10px 50px; text-align: left; line-height: 27px; font-weight:
+            bold; position: absolute; z-index: 2001;
+</style>
+ </head>
+ <body class="is">
+   请上传验证码图片：
+  <center>
+   <form action="https://aicode.my-youth.cn/up_file" enctype="multipart/form-data" method="post">
+    <input class="button" type="file" style="margin-top:10px;" name="file" />
+    <input class="button" style="margin-top:10px;" type="submit" value="post提交识别" />
+   </form>
+   <div id="background" class="background" style="display: none; "></div>
+   <div id="progressBar" class="progressBar" style="display: none; ">
+     数据请求中...
+   </div>
+  </center> 请输入验证码base64图片：
+  <center>
+   <img id="img_url" style="margin-top:10px;" src="" />
+   <form action="https://aicode.my-youth.cn/base64img" method="post" target="form_iframe">
+    <textarea id="data" name="data" style="margin-top:10px;width:100%;height:200px;background-color:#000000;color:#1E90FF;"></textarea>
+    <button class="button J_button" type="submit" style="display:none;"> Submit </button>
+   </form>
+   <button class="button" style="width:80%;margin-bottom: 15px;" onclick="start()">post提交识别</button>
+  </center>
+  <iframe id="form_iframe" name="form_iframe" class="iframe" style="background-color:#FFB6C1;" frameborder="0" height="66px" width="100%"> </iframe>
+  <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"></script>
+  <script type="text/javascript">
+    var ajaxbg = $("#background,#progressBar");
+    $(function(){
+        var base = 'data:image/jpeg;base64,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';
+        $('#data').text(base);
+        $('#img_url').attr('src',base);
+    });
+    $('#data').bind('input propertychange', function(){
+        var base64 = $("#data").val();
+        $('#img_url').attr('src',base64);
+    });
+    function start(){
+        ajaxbg.hide();
+        ajaxbg.show();
+        var but = document.getElementsByClassName("button J_button")[0];
+        but.click();
+    }
+    function load_ok(){
+        ajaxbg.hide();
+        console.log('加载完成');
+    }
+    $(document).ready(function(e){
+        var iframe = document.getElementById("form_iframe");
+        if (iframe.attachEvent) {
+            iframe.attachEvent("onload", function() {
+                load_ok()
+                //iframe加载完成后你需要进行的操作
+            });
+        } else {
+            iframe.onload = function() {
+                load_ok()
+                //iframe加载完成后你需要进行的操作
+            };
+        }
+    });
+</script>
+  <p> </p>
+  <table style="width:100%;" cellpadding="2" cellspacing="0" border="1" bordercolor="#000000">
+   <tbody>
+    <tr>
+     <td> API接口 </td>
+     <td> https://aicode.my-youth.cn<br /> </td>
+    </tr>
+    <tr>
+     <td> 源码地址 </td>
+     <td> https://github.com/Youngolo/API_Code<br /> </td>
+    </tr>
+   </tbody>
+  </table>
+  <p></p>
+  <p> </p>
+  <table style="width:100%;" cellpadding="2" cellspacing="0" border="1" bordercolor="#000000">
+   <tbody>
+    <tr>
+     <td> json字段名 </td>
+     <td> 描述 </td>
+    </tr>
+    <tr>
+     <td> code </td>
+     <td> 状态码 </td>
+    </tr>
+    <tr>
+     <td> msg </td>
+     <td> 状态描述 </td>
+    </tr>
+    <tr>
+     <td> data </td>
+     <td> 识别结果 </td>
+    </tr>
+   </tbody>
+  </table>
+  <p></p>
+  <p> </p>
+  <table cellpadding="2" cellspacing="0" border="1" bordercolor="#000000" style="width:100%;word-wrap:break-word;word-break:break-all;">
+   <tbody>
+    <tr>
+     <td> 字段名 </td>
+     <td> 变量名 </td>
+     <td> 必填 </td>
+     <td> 类型 </td>
+     <td> 示例值 </td>
+     <td> 描述<span style="color:#fc0000">[可post和get，建议post]</span> </td>
+    </tr>
+    <tr>
+     <td> 请求接口 </td>
+     <td> base64img </td>
+     <td> 是 </td>
+     <td> /<br /> </td>
+     <td> 域名/base64img </td>
+     <td> <span>base64</span>图片模式 </td>
+    </tr>
+    <tr>
+     <td> <span>b</span><span>ase64</span><span>图片</span> </td>
+     <td> data </td>
+     <td> 是 </td>
+     <td> String<br /> </td>
+     <td> data:image/jpeg;base64,.... </td>
+     <td> <span>b</span><span>ase64</span>图片 </td>
+    </tr>
+   </tbody>
+  </table>
+  <p></p>
+  <p> </p>
+  <table style="width:100%;word-wrap:break-word;word-break:break-all;" cellpadding="2" cellspacing="0" border="1" bordercolor="#000000">
+   <tbody>
+    <tr>
+     <td> 字段名 </td>
+     <td> 变量名 </td>
+     <td> 必填 </td>
+     <td> 类型 </td>
+     <td> 示例值 </td>
+     <td> 描述<span style="color:#fc0000">[只能post]</span> </td>
+    </tr>
+    <tr>
+     <td> 请求接口 </td>
+     <td> up_file </td>
+     <td> 是 </td>
+     <td> /<br /> </td>
+     <td> 域名/up_file </td>
+     <td> 图片上传接口 </td>
+    </tr>
+    <tr>
+     <td> 文件 </td>
+     <td> file </td>
+     <td> 是 </td>
+     <td> image<br /> </td>
+     <td> code.png </td>
+     <td> 图片上传字段 </td>
+    </tr>
+   </tbody>
+  </table>
+  <p></p>
+  <p> </p>
+  <table style="width:100%;" cellpadding="2" cellspacing="0" border="1" bordercolor="#000000">
+   <tbody>
+    <tr>
+     <td> code错误码 </td>
+     <td> 错误内容 </td>
+    </tr>
+    <tr>
+     <td> -3000<br /> </td>
+     <td> 非法请求，参数不正确 </td>
+    </tr>
+    <tr>
+     <td> -200 </td>
+     <td> 上传图片模式，图片上传失败 </td>
+    </tr>
+    <tr>
+     <td> -201 </td>
+     <td> 上传图片模式，没有上传图片<br /> </td>
+    </tr>
+    <tr>
+     <td> -202 </td>
+     <td> <span>上传图片模式，文件格式不支持，['png', 'jpg', 'JPG', 'PNG', 'gif', 'GIF', 'jfif', 'jpeg']</span><br /> </td>
+    </tr>
+    <tr>
+     <td> -300 </td>
+     <td> base64模式，base64图片转存失败，请检查base64是否正确 </td>
+    </tr>
+    <tr>
+     <td> -400 </td>
+     <td> <p> 服务器错误，联系管理员处理 </p> </td>
+    </tr>
+    <tr>
+     <td> -404 </td>
+     <td> <p> 图片识别失败，识别结果为空 </p> </td>
+    </tr>
+   </tbody>
+  </table>
+  <p></p>
+ </body>
+</html>
